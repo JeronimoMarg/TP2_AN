@@ -41,7 +41,7 @@ Hay que ver si necesitamos todos los frames o solo el ultimo
 '''
 
 def crearMascara(imagen):
-    amarillo_minimo = np.array([20, 70, 70], np.uint8)
+    amarillo_minimo = np.array([20, 70  , 70], np.uint8)
     amarillo_maximo = np.array([40, 255, 255], np.uint8)
 
     mascaraAmarilla = cv2.inRange(imagen, amarillo_minimo, amarillo_maximo)
@@ -87,7 +87,7 @@ El resultado de esta convolucion es el gradiente de la posicionX, posicionY
 '''
 
 def dilatacionClausura(bordes):
-    kernel = np.ones((3,3), np.uint8)
+    kernel = np.ones((5,5), np.uint8)
     bordes_dilatacion = cv2.dilate(bordes, kernel, iterations=1)
     bordes_clausura = cv2.morphologyEx(bordes_dilatacion, cv2.MORPH_CLOSE, kernel, iterations=1)
     return bordes_clausura
@@ -98,6 +98,49 @@ Lo que hace esta funcion es primero crear el elemento estructurante (una matriz 
 Despues se aplica una dilatacion con ese kernel y seguido una clausura o cierre.
 
 Se retorna el resultado de esa operacion
+'''
+
+'''     CORRESPONDE A OTRA SOLUCION DEL INCISO D (no anda)
+def areaAmarillo(bordes_cerrados):
+    # Llenar el área cerrada
+    mascara_llenada = bordes_cerrados.copy()
+    mascara_inversa = cv2.bitwise_not(mascara_llenada)
+    h, w = bordes_cerrados.shape[:2]
+    mask = np.zeros((h+2, w+2), np.uint8)
+    cv2.floodFill(mascara_llenada, mask, (0, 0), 255)
+    mascara_llenada = cv2.bitwise_not(mascara_llenada)
+    mascara_final = cv2.bitwise_or(mascara_llenada, mascara_inversa)
+    cv2.imshow('Prueba', mascara_final)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # Calcular el área del color amarillo
+    area_amarillo = cv2.countNonZero(mascara_final)
+    # Calcular el área total de la imagen
+    area_total = bordes_cerrados.shape[0] * bordes_cerrados.shape[1]
+    # Calcular el porcentaje del área del color amarillo respecto al área total
+    porcentaje_amarillo = (area_amarillo / area_total) * 100
+    print("Porcentaje de amarillo: " , porcentaje_amarillo)
+'''
+
+def areaAmarillo(bordes):
+    contornos, _ = cv2.findContours(bordes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    mascara_llena = np.zeros_like(bordes)
+    cv2.drawContours(mascara_llena, contornos, -1, (255), thickness=cv2.FILLED)
+
+    area_amarillo = cv2.countNonZero(mascara_llena)
+    area_total = mascara_llena.shape[0] * mascara_llena.shape[1]
+    porcentaje_area_amarillo = (area_amarillo / area_total) * 100
+
+    print("Porcentaje del área amarilla respecto al área total de la imagen:", porcentaje_area_amarillo)
+
+    return mascara_llena
+
+'''
+Lo que hace esta funcion es buscar el contorno de la figura delimitada por los bordes
+Despues la llena de color blanco.
+
+Se cuentan los colores blanco y negro y se saca un porcentaje.
+El porcentaje simboliza cuanto del total de la imagen es de color amarillo
 '''
 
 #Cargar info de imagenes y videos
@@ -121,6 +164,9 @@ bordes_2 = detectarBordes(mascara_saturacion_2)
 bordes_mod_1 = dilatacionClausura(bordes_1)
 bordes_mod_2 = dilatacionClausura(bordes_2)
 
+contorno_1 = areaAmarillo(bordes_mod_1)
+contorno_2 = areaAmarillo(bordes_mod_2)
+
 #Visualizacion de imagenes
 cv2.imshow('imagenOriginal', cv2.cvtColor(imagen_hsv_1, cv2.COLOR_HSV2BGR))
 cv2.imshow('imagenHsv', imagen_hsv_1)
@@ -128,6 +174,7 @@ cv2.imshow('mascaraAmarilla', mascara_amarilla_1)
 cv2.imshow('mascaraSaturacion', mascara_saturacion_1)
 cv2.imshow('bordesSaturacion', bordes_1)
 cv2.imshow('bordesDilatadosClausurados', bordes_mod_1)
+cv2.imshow('areaAmarilla', contorno_1)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
@@ -137,5 +184,6 @@ cv2.imshow('mascaraAmarilla', mascara_amarilla_2)
 cv2.imshow('mascaraSaturacion', mascara_saturacion_2)
 cv2.imshow('bordesSaturacion', bordes_2)
 cv2.imshow('bordesDilatadosClausurados', bordes_mod_2)
+cv2.imshow('areaAmarilla', contorno_2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

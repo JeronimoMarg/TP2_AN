@@ -82,7 +82,7 @@ def detectarBordes(mascaraSaturacion):
 Esta funcion detecta los bordes usando la funcion sobel.
 Primero saca las derivadas en direccion x e y para despues sacar el vector resultante.
 
-Basicamente es una convolucion con una matriz llamada kernel
+Basicamente es una convolucion con una matriz llamada kernel 
 El resultado de esta convolucion es el gradiente de la posicionX, posicionY
 '''
 
@@ -143,6 +143,21 @@ Se cuentan los colores blanco y negro y se saca un porcentaje.
 El porcentaje simboliza cuanto del total de la imagen es de color amarillo
 '''
 
+def promedioIntensidad (imagen,img2,mascara,mascara2):
+    intensidad = imagen[:,:,2]
+    intensidad2 = img2[:,:,2]
+    mascaraCanalIntensidad = cv2.bitwise_and( intensidad, intensidad, mask=mascara)
+    mascaraCanalIntensidad2 = cv2.bitwise_and( intensidad2 , intensidad2, mask=mascara2)
+    prom1 = np.mean(mascaraCanalIntensidad)
+    prom2 = np.mean(mascaraCanalIntensidad2)
+    if prom1 > prom2 :
+        nombreImg = "im1_tp2.jpg"
+    else: 
+        nombreImg = "im2_tp2.jpg"
+
+    print("La imagen que posee más cantidad de muestra es : ", nombreImg)
+
+
 #Cargar info de imagenes y videos
 imagen_hsv_1 = cargarImgHsv('im1_tp2.jpg')
 imagen_hsv_2 = cargarImgHsv('im2_tp2.jpg')
@@ -166,6 +181,9 @@ bordes_mod_2 = dilatacionClausura(bordes_2)
 
 contorno_1 = areaAmarillo(bordes_mod_1)
 contorno_2 = areaAmarillo(bordes_mod_2)
+
+#area más intensa
+promedioIntensidad(imagen_hsv_1,imagen_hsv_2,contorno_1,contorno_2)
 
 #Visualizacion de imagenes
 cv2.imshow('imagenOriginal', cv2.cvtColor(imagen_hsv_1, cv2.COLOR_HSV2BGR))

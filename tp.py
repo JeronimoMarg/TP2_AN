@@ -153,12 +153,14 @@ def calculoMayorIntensidad (imagen,imagen2,mascara,mascara2):
     mascaraCanalIntensidad2 = aplicarIntensidad(imagen2, mascara2)
     prom1 = np.mean(mascaraCanalIntensidad)
     prom2 = np.mean(mascaraCanalIntensidad2)
-    if prom1 > prom2 :
+    if prom1 == prom2 : 
+        print("Las muestras son equivalentes")
+    elif prom1 > prom2 :
         nombreImg = "im1_tp2.jpg"
-    else: 
+    else:
         nombreImg = "im2_tp2.jpg"
-
     print("La imagen que posee más cantidad de muestra es : ", nombreImg)
+    
 
 
 #Cargar info de imagenes y videos

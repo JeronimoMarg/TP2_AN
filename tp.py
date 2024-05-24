@@ -143,11 +143,14 @@ Se cuentan los colores blanco y negro y se saca un porcentaje.
 El porcentaje simboliza cuanto del total de la imagen es de color amarillo
 '''
 
-def promedioIntensidad (imagen,img2,mascara,mascara2):
+def aplicarIntensidad (imagen,mascara):
     intensidad = imagen[:,:,2]
-    intensidad2 = img2[:,:,2]
     mascaraCanalIntensidad = cv2.bitwise_and( intensidad, intensidad, mask=mascara)
-    mascaraCanalIntensidad2 = cv2.bitwise_and( intensidad2 , intensidad2, mask=mascara2)
+    return mascaraCanalIntensidad
+
+def calculoMayorIntensidad (imagen,imagen2,mascara,mascara2):
+    mascaraCanalIntensidad = aplicarIntensidad(imagen, mascara)
+    mascaraCanalIntensidad2 = aplicarIntensidad(imagen2, mascara2)
     prom1 = np.mean(mascaraCanalIntensidad)
     prom2 = np.mean(mascaraCanalIntensidad2)
     if prom1 > prom2 :
@@ -183,7 +186,9 @@ contorno_1 = areaAmarillo(bordes_mod_1)
 contorno_2 = areaAmarillo(bordes_mod_2)
 
 #area más intensa
-promedioIntensidad(imagen_hsv_1,imagen_hsv_2,contorno_1,contorno_2)
+calculoMayorIntensidad(imagen_hsv_1,imagen_hsv_2,contorno_1,contorno_2)
+mascara_intensidad_1 = aplicarIntensidad(imagen_hsv_1,contorno_1) 
+mascara_intensidad_2 = aplicarIntensidad(imagen_hsv_2,contorno_2) 
 
 #Visualizacion de imagenes
 cv2.imshow('imagenOriginal', cv2.cvtColor(imagen_hsv_1, cv2.COLOR_HSV2BGR))
@@ -193,6 +198,7 @@ cv2.imshow('mascaraSaturacion', mascara_saturacion_1)
 cv2.imshow('bordesSaturacion', bordes_1)
 cv2.imshow('bordesDilatadosClausurados', bordes_mod_1)
 cv2.imshow('areaAmarilla', contorno_1)
+cv2.imshow('mascaraIntensidad',mascara_intensidad_1)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
@@ -203,5 +209,6 @@ cv2.imshow('mascaraSaturacion', mascara_saturacion_2)
 cv2.imshow('bordesSaturacion', bordes_2)
 cv2.imshow('bordesDilatadosClausurados', bordes_mod_2)
 cv2.imshow('areaAmarilla', contorno_2)
+cv2.imshow('mascaraIntensidad',mascara_intensidad_2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()

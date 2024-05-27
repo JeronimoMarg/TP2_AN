@@ -151,8 +151,8 @@ def aplicarIntensidad (imagen,mascara):
 def calculoMayorIntensidad (imagen,imagen2,mascara,mascara2):
     mascaraCanalIntensidad = aplicarIntensidad(imagen, mascara)
     mascaraCanalIntensidad2 = aplicarIntensidad(imagen2, mascara2)
-    prom1 = np.mean(mascaraCanalIntensidad)
-    prom2 = np.mean(mascaraCanalIntensidad2)
+    prom1 = np.sum(mascaraCanalIntensidad)
+    prom2 = np.sum(mascaraCanalIntensidad2)
     if prom1 == prom2 : 
         print("Las muestras son equivalentes")
     elif prom1 > prom2 :

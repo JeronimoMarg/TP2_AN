@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import os
 
 def cargarImgHsv(nombre):
     imagen = cv2.imread(nombre)
@@ -39,6 +39,12 @@ Lo que retorna, a diferencia de la anterior, es un array con todos los frames pr
 
 Hay que ver si necesitamos todos los frames o solo el ultimo
 '''
+def seleccionarFramesPorSegundo(frames_hsv, fps, duracion):
+    selected_frames = []
+    total_frames = len(frames_hsv)
+    for i in range(min(duracion, total_frames)):
+        selected_frames.append(frames_hsv[int(i * fps)])
+    return np.array(selected_frames)
 
 def crearMascara(imagen):
     amarillo_minimo = np.array([20, 70  , 70], np.uint8)
@@ -100,28 +106,6 @@ Despues se aplica una dilatacion con ese kernel y seguido una clausura o cierre.
 Se retorna el resultado de esa operacion
 '''
 
-'''     CORRESPONDE A OTRA SOLUCION DEL INCISO D (no anda)
-def areaAmarillo(bordes_cerrados):
-    # Llenar el área cerrada
-    mascara_llenada = bordes_cerrados.copy()
-    mascara_inversa = cv2.bitwise_not(mascara_llenada)
-    h, w = bordes_cerrados.shape[:2]
-    mask = np.zeros((h+2, w+2), np.uint8)
-    cv2.floodFill(mascara_llenada, mask, (0, 0), 255)
-    mascara_llenada = cv2.bitwise_not(mascara_llenada)
-    mascara_final = cv2.bitwise_or(mascara_llenada, mascara_inversa)
-    cv2.imshow('Prueba', mascara_final)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    # Calcular el área del color amarillo
-    area_amarillo = cv2.countNonZero(mascara_final)
-    # Calcular el área total de la imagen
-    area_total = bordes_cerrados.shape[0] * bordes_cerrados.shape[1]
-    # Calcular el porcentaje del área del color amarillo respecto al área total
-    porcentaje_amarillo = (area_amarillo / area_total) * 100
-    print("Porcentaje de amarillo: " , porcentaje_amarillo)
-'''
-
 def areaAmarillo(bordes):
     contornos, _ = cv2.findContours(bordes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     mascara_llena = np.zeros_like(bordes)
@@ -145,8 +129,14 @@ El porcentaje simboliza cuanto del total de la imagen es de color amarillo
 
 def aplicarIntensidad (imagen,mascara):
     intensidad = imagen[:,:,2]
-    mascaraCanalIntensidad = cv2.bitwise_and( intensidad, intensidad, mask=mascara)
+    mascaraCanalIntensidad = cv2.bitwise_and(intensidad, intensidad, mask=mascara)
     return mascaraCanalIntensidad
+
+'''
+Esta funcion devuelve los valores de intensidad de la imagen original con la mascara de los contornos llenadas anteriormente.
+
+Es decir, devuelve los valores de intensidad de la imagen original para los valores 1 de la mascara.
+'''
 
 def calculoMayorIntensidad (imagen,imagen2,mascara,mascara2):
     mascaraCanalIntensidad = aplicarIntensidad(imagen, mascara)
@@ -160,13 +150,23 @@ def calculoMayorIntensidad (imagen,imagen2,mascara,mascara2):
     else:
         nombreImg = "im2_tp2.jpg"
     print("La imagen que posee más cantidad de muestra es : ", nombreImg)
-    
 
+'''
+El objetivo de esta funcion es tomar los valores de intensidad y sumarlos.
+
+Compara la cantidad sumada, si es mayor significa que tiene mayor cantidad de muestra.
+'''
+    
+#Cambiar el directorio al actual donde se encuentra el archivo python
+script_directory = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_directory)
+#print("New Working Directory:", os.getcwd())
+
+'''-------------PROCESAMIENTO DE IMAGENES---------------------'''
 
 #Cargar info de imagenes y videos
 imagen_hsv_1 = cargarImgHsv('im1_tp2.jpg')
 imagen_hsv_2 = cargarImgHsv('im2_tp2.jpg')
-video_hsv = cargarVidHsv('video_tp2.mp4')
 
 #Creacion de la mascara amarilla en las imagenes
 mascara_amarilla_1 = crearMascara(imagen_hsv_1)
@@ -184,10 +184,11 @@ bordes_2 = detectarBordes(mascara_saturacion_2)
 bordes_mod_1 = dilatacionClausura(bordes_1)
 bordes_mod_2 = dilatacionClausura(bordes_2)
 
+#Contornos y porcentaje de area amarilla
 contorno_1 = areaAmarillo(bordes_mod_1)
 contorno_2 = areaAmarillo(bordes_mod_2)
 
-#area más intensa
+#Area mas intensa
 calculoMayorIntensidad(imagen_hsv_1,imagen_hsv_2,contorno_1,contorno_2)
 mascara_intensidad_1 = aplicarIntensidad(imagen_hsv_1,contorno_1) 
 mascara_intensidad_2 = aplicarIntensidad(imagen_hsv_2,contorno_2) 
@@ -214,3 +215,32 @@ cv2.imshow('areaAmarilla', contorno_2)
 cv2.imshow('mascaraIntensidad',mascara_intensidad_2)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+'''-------------PROCESAMIENTO DE VIDEO---------------------'''
+
+video_hsv = cargarVidHsv('video_tp2.mp4')
+
+cap = cv2.VideoCapture('video_tp2.mp4')
+fps = cap.get(cv2.CAP_PROP_FPS)
+duracion = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps)
+cap.release()
+video_hsv_acortado = seleccionarFramesPorSegundo(video_hsv, fps, duracion)
+
+for i in range(len(video_hsv_acortado)):
+    frame = video_hsv_acortado[i]
+    mascara_amarilla_vid = crearMascara(frame)
+    mascara_saturacion_vid = aplicarMascaraEnSaturacion(frame, mascara_amarilla_vid)
+    bordes_vid = detectarBordes(mascara_saturacion_vid)
+    bordes_mod_vid = dilatacionClausura(bordes_vid)
+    contorno_vid = areaAmarillo(bordes_mod_vid)
+    mascara_intensidad_vid = aplicarIntensidad(frame,contorno_vid)
+    cv2.imshow('imagenOriginal', cv2.cvtColor(frame, cv2.COLOR_HSV2BGR))
+    cv2.imshow('imagenHsv', frame)
+    cv2.imshow('mascaraAmarilla', mascara_amarilla_vid)
+    cv2.imshow('mascaraSaturacion', mascara_saturacion_vid)
+    cv2.imshow('bordesSaturacion', bordes_vid)
+    cv2.imshow('bordesDilatadosClausurados', bordes_mod_vid)
+    cv2.imshow('areaAmarilla', contorno_vid)
+    cv2.imshow('mascaraIntensidad',mascara_intensidad_vid)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
